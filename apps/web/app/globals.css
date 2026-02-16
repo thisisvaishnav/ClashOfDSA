@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0a0a0a;
+  --color-foreground: #ededed;
+  --color-muted: #888888;
+  --color-border: #2a2a2a;
+  --color-card: #111111;
+  --color-card-hover: #1a1a1a;
+  --color-accent: #3b82f6;
+  --color-accent-hover: #2563eb;
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
+  --color-danger-hover: #dc2626;
+  --color-warning: #f59e0b;
+  --color-warning-hover: #d97706;
+  --color-surface: #161616;
+  --color-nav: #0f0f0f;
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+
+  /* Game UI theme colors */
+  --color-game-cream: #F5ECD7;
+  --color-game-cream-dark: #E8DCC6;
+  --color-game-cream-light: #FAF6EE;
+  --color-game-navy: #1B2838;
+  --color-game-navy-light: #2C3E50;
+  --color-game-amber: #D4A017;
+  --color-game-amber-dark: #B8860B;
+  --color-game-amber-light: #E8C547;
+  --color-game-red: #B22222;
+  --color-game-red-light: #D43F3F;
+  --color-game-green: #4A7C59;
+  --color-game-green-light: #5F9E72;
+  --color-game-blue: #2C5F8A;
+  --color-game-blue-light: #3A7AB5;
+  --color-game-orange: #CC7722;
+  --color-game-orange-light: #E09040;
+  --color-game-gray: #A0A0A0;
+  --color-game-gray-dark: #6B6B6B;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== Game UI Custom Styles ===== */
+
+/* Hazard stripe pattern */
+.game-hazard-stripe-warning {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--color-game-amber),
+    var(--color-game-amber) 8px,
+    var(--color-game-cream) 8px,
+    var(--color-game-cream) 16px
+  );
+}
+
+.game-hazard-stripe-danger {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--color-game-red),
+    var(--color-game-red) 8px,
+    var(--color-game-cream) 8px,
+    var(--color-game-cream) 16px
+  );
+}
+
+.game-hazard-stripe-info {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--color-game-blue),
+    var(--color-game-blue) 8px,
+    var(--color-game-cream) 8px,
+    var(--color-game-cream) 16px
+  );
+}
+
+.game-hazard-stripe-success {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--color-game-green),
+    var(--color-game-green) 8px,
+    var(--color-game-cream) 8px,
+    var(--color-game-cream) 16px
+  );
+}
+
+/* Panel offset shadow */
+.game-shadow {
+  box-shadow: 4px 4px 0px var(--color-game-navy);
+}
+
+.game-shadow-sm {
+  box-shadow: 2px 2px 0px var(--color-game-navy);
+}
+
+.game-shadow-lg {
+  box-shadow: 6px 6px 0px var(--color-game-navy);
+}
+
+/* Corner fold effect */
+.game-fold::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(
+    225deg,
+    var(--color-game-cream-dark) 50%,
+    var(--color-game-navy) 50%
+  );
+  border-bottom-left-radius: 4px;
+}
+
+/* Button pressed state */
+.game-btn-pressed {
+  box-shadow: 1px 1px 0px var(--color-game-navy);
+  transform: translate(1px, 1px);
+}
+
+/* Scrollbar styling for game panels */
+.game-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.game-scrollbar::-webkit-scrollbar-track {
+  background: var(--color-game-cream-dark);
+  border-left: 2px solid var(--color-game-navy);
+}
+
+.game-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-game-navy);
+  border: 1px solid var(--color-game-navy-light);
+}
+
+.game-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-game-navy-light);
+}
