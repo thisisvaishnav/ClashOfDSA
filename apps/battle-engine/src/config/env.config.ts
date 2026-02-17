@@ -1,8 +1,10 @@
 import dotenv from 'dotenv';
+import path from 'path';
 import { z } from 'zod';
 
-// Load environment variables
-dotenv.config({ path: '../../.env' });
+// Load environment variables (only needed locally; Railway injects env vars directly)
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+dotenv.config(); // also load from process cwd as fallback
 
 // Define schema for type safety
 const envSchema = z.object({

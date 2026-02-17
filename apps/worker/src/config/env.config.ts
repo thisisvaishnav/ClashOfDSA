@@ -1,7 +1,9 @@
 import dotenv from 'dotenv';
+import path from 'path';
 
-// Load .env from monorepo root
-dotenv.config({ path: '../../.env' });
+// Load .env from monorepo root (only needed locally; Railway injects env vars directly)
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+dotenv.config(); // also load from process cwd as fallback
 
 // ─── Server ──────────────────────────────────────────────────────────
 export const NODE_ENV = process.env.NODE_ENV || 'development';
