@@ -53,14 +53,16 @@ const authMiddleware = async (socket: TypedSocket, next: (err?: Error) => void) 
     // Import the auth instance at the top:
     // import { auth } from '../../features/auth/auth.service';
     const session = await auth.api.getSession({
-      headers: { Authorization: `Bearer ${token}` }
+      headers: new Headers({
+        cookie: `better-auth.session_token=${token}`,
+      }),
     });
     if (!session || !session.user) {
       return next(new Error('Invalid or expired token'));
     }
     socket.data.userId = session.user.id;
     socket.data.userName = session.user.name;
-    socket.data.userRating = session.user.rating;
+    socket.data.userRating = (session.user as any).rating ?? 1200;
 
 
     next();

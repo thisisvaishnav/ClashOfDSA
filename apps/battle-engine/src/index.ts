@@ -17,10 +17,17 @@ app.use(express.json());
 app.use(authRouter);
 app.use(submissionRouter);
 
-const server = http.createServer(app);
+const startServer = async () => {
+  await redis.connect();
 
-export const io = initSocket(server);
+  const server = http.createServer(app);
+  const io = initSocket(server);
 
-server.listen(SERVER_PORT, () => {
-  console.log(`Server running on http://localhost:${SERVER_PORT}`);
-});
+  server.listen(SERVER_PORT, () => {
+    console.log(`Server running on http://localhost:${SERVER_PORT}`);
+  });
+
+  return { server, io };
+};
+
+export const serverPromise = startServer();

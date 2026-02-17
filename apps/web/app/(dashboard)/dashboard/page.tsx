@@ -16,9 +16,16 @@ import {
   Activity,
   Target,
   Shield,
+  Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import questionsData from "../../data/questions.json";
+import { useSession } from "../../../lib/auth-client";
+import {
+  useMatchmaking,
+  type MatchmakingStatus,
+  type OpponentInfo,
+} from "../../../hooks/useMatchmaking";
 
 import {
   GamePanel,
@@ -200,19 +207,242 @@ const FriendCard = ({ isOpen, onClose }: FriendCardProps) => {
 };
 
 /* ────────────────────────────────────────────────────────────
+   Matchmaking Overlay
+   ──────────────────────────────────────────────────────────── */
+
+type MatchmakingOverlayProps = {
+  status: MatchmakingStatus;
+  opponent: OpponentInfo | null;
+  countdown: number;
+  searchTime: number;
+  error: string | null;
+  onCancel: () => void;
+};
+
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
+
+const MatchmakingOverlay = ({
+  status,
+  opponent,
+  countdown,
+  searchTime,
+  error,
+  onCancel,
+}: MatchmakingOverlayProps) => {
+  if (status === "idle") return null;
+
+  const headerTitle: Record<Exclude<MatchmakingStatus, "idle">, string> = {
+    searching: "Finding Opponent",
+    found: "Opponent Found!",
+    countdown: "Get Ready!",
+    redirecting: "Starting Battle",
+  };
+
+  const headerSubtitle: Record<Exclude<MatchmakingStatus, "idle">, string> = {
+    searching: "Quick Match • 1v1",
+    found: "Prepare for battle",
+    countdown: "Battle imminent",
+    redirecting: "Entering arena...",
+  };
+
+  const activeStatus = status as Exclude<MatchmakingStatus, "idle">;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-game-navy/60 backdrop-blur-sm"
+      role="dialog"
+      aria-label="Matchmaking"
+      aria-modal="true"
+    >
+      <GamePanel
+        variant="default"
+        hasShadow
+        shadowSize="lg"
+        className="relative w-full max-w-sm !p-0 overflow-hidden"
+      >
+        {/* Top stripe */}
+        <HazardStripe variant="info" height="sm" />
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 bg-game-navy">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center border-[2px] border-game-blue rounded-sm bg-game-blue/20">
+              {status === "searching" ? (
+                <Zap className="h-5 w-5 text-game-blue" />
+              ) : (
+                <Swords className="h-5 w-5 text-game-blue" />
+              )}
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-game-cream uppercase">
+                {headerTitle[activeStatus]}
+              </h3>
+              <p className="text-[10px] font-bold text-game-cream/50 uppercase">
+                {headerSubtitle[activeStatus]}
+              </p>
+            </div>
+          </div>
+
+          {status === "searching" && (
+            <GameIconButton
+              variant="red"
+              size="sm"
+              onClick={onCancel}
+              aria-label="Cancel matchmaking"
+            >
+              <X className="h-4 w-4" />
+            </GameIconButton>
+          )}
+        </div>
+
+        {/* Body */}
+        <div className="p-6">
+          {/* ── Searching ── */}
+          {status === "searching" && (
+            <div className="flex flex-col items-center gap-5">
+              {/* Pulsing radar */}
+              <div className="relative flex h-20 w-20 items-center justify-center">
+                <span className="absolute inset-0 rounded-full border-[3px] border-game-blue/30 animate-ping" />
+                <span className="absolute inset-2 rounded-full border-[2px] border-game-blue/50 animate-pulse" />
+                <Zap className="h-8 w-8 text-game-blue" />
+              </div>
+
+              <div className="text-center">
+                <p className="text-sm font-bold text-game-navy uppercase">
+                  Searching for opponent…
+                </p>
+                <p className="mt-1 text-2xl font-bold text-game-navy tabular-nums">
+                  {formatTime(searchTime)}
+                </p>
+              </div>
+
+              {error && (
+                <GameAlert variant="error" message={error} />
+              )}
+
+              <GameButton
+                variant="danger"
+                size="md"
+                className="w-full"
+                onClick={onCancel}
+                aria-label="Cancel search"
+              >
+                Cancel Search
+              </GameButton>
+            </div>
+          )}
+
+          {/* ── Found ── */}
+          {status === "found" && opponent && (
+            <div className="flex flex-col items-center gap-5">
+              <div className="flex items-center gap-6">
+                {/* You */}
+                <div className="flex flex-col items-center">
+                  <div className="flex h-14 w-14 items-center justify-center border-[2px] border-game-navy rounded-sm bg-game-blue text-game-cream game-shadow-sm">
+                    <Users className="h-6 w-6" />
+                  </div>
+                  <p className="mt-2 text-xs font-bold text-game-navy uppercase">
+                    You
+                  </p>
+                </div>
+
+                {/* VS */}
+                <div className="flex h-10 w-10 items-center justify-center border-[2px] border-game-navy rounded-full bg-game-amber game-shadow-sm">
+                  <Swords className="h-5 w-5 text-game-navy" />
+                </div>
+
+                {/* Opponent */}
+                <div className="flex flex-col items-center">
+                  <div className="flex h-14 w-14 items-center justify-center border-[2px] border-game-navy rounded-sm bg-game-red text-game-cream game-shadow-sm">
+                    <Users className="h-6 w-6" />
+                  </div>
+                  <p className="mt-2 text-xs font-bold text-game-navy uppercase truncate max-w-[100px]">
+                    {opponent.name}
+                  </p>
+                </div>
+              </div>
+
+              <GameBadge variant="warning">
+                <Trophy size={10} />
+                Rating: {opponent.rating}
+              </GameBadge>
+
+              <p className="text-xs font-bold text-game-navy/50 uppercase animate-pulse">
+                Preparing battle…
+              </p>
+            </div>
+          )}
+
+          {/* ── Countdown ── */}
+          {status === "countdown" && (
+            <div className="flex flex-col items-center gap-5">
+              <div className="flex h-24 w-24 items-center justify-center border-[3px] border-game-navy rounded-sm bg-game-amber game-shadow-sm">
+                <span className="text-5xl font-black text-game-navy">
+                  {countdown}
+                </span>
+              </div>
+              <p className="text-sm font-bold text-game-navy uppercase">
+                Battle begins in…
+              </p>
+            </div>
+          )}
+
+          {/* ── Redirecting ── */}
+          {status === "redirecting" && (
+            <div className="flex flex-col items-center gap-5">
+              <div className="flex h-16 w-16 items-center justify-center animate-pulse">
+                <Swords className="h-10 w-10 text-game-amber" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-game-navy/60" />
+                <p className="text-sm font-bold text-game-navy uppercase">
+                  Entering the arena…
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom stripe */}
+        <HazardStripe variant="info" height="sm" />
+      </GamePanel>
+    </div>
+  );
+};
+
+/* ────────────────────────────────────────────────────────────
    Dashboard Page
    ──────────────────────────────────────────────────────────── */
 
 const DashboardPage = () => {
   const router = useRouter();
+  const { data: session } = useSession();
   const [isFriendCardOpen, setIsFriendCardOpen] = useState(false);
+
+  const {
+    status: matchmakingStatus,
+    opponent,
+    countdown,
+    searchTime,
+    error: matchmakingError,
+    joinQueue,
+    leaveQueue,
+  } = useMatchmaking();
 
   const handleCardClick = (card: MatchCard) => {
     if (card.status === "locked") return;
 
     switch (card.action) {
-      case "matchmaking":
+      case "matchmaking": {
+        const userId = session?.user?.id;
+        if (!userId) return;
+        joinQueue(userId);
         return;
+      }
       case "navigate": {
         if (card.id !== "practice-solo") return;
 
@@ -250,9 +480,25 @@ const DashboardPage = () => {
     setIsFriendCardOpen(false);
   };
 
+  const handleCancelMatchmaking = () => {
+    const userId = session?.user?.id;
+    if (userId) {
+      leaveQueue(userId);
+    }
+  };
+
   return (
     <>
       <FriendCard isOpen={isFriendCardOpen} onClose={handleCloseFriendCard} />
+      
+      <MatchmakingOverlay
+        status={matchmakingStatus}
+        opponent={opponent}
+        countdown={countdown}
+        searchTime={searchTime}
+        error={matchmakingError}
+        onCancel={handleCancelMatchmaking}
+      />
 
       <div className="mx-auto max-w-6xl px-6 py-8">
         {/* ── Header ── */}
@@ -353,7 +599,6 @@ const DashboardPage = () => {
                           {card.action === "navigate" && "Start Practice"}
                           {card.action === "friend-card" && "Invite Friend"}
                         </span>
-                        <ArrowRight className="h-3.5 w-3.5" />
                       </div>
                     )}
                   </div>
