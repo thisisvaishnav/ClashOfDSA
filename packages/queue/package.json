@@ -2,9 +2,10 @@
   "name": "@repo/queue",
   "version": "1.0.0",
   "description": "Shared Redis connection and BullMQ queue definitions",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -12,7 +13,8 @@
     "ioredis": "^5.4.2"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*"
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "5.9.2"
   },
   "keywords": [],
   "author": "",

@@ -24,7 +24,7 @@ export const handleSendMessage = async (req: Request, res: Response): Promise<vo
   if (!parsedBody.success || !parsedParams.success) {
     res.status(400).json({
       success: false,
-      error: parsedBody.success ? parsedParams.error.flatten() : parsedBody.error.flatten(),
+      error: parsedBody.success ? parsedParams.error!.flatten() : parsedBody.error!.flatten(),
     });
     return;
   }
@@ -41,7 +41,7 @@ export const handleGetConversation = async (req: Request, res: Response): Promis
   if (!parsedParams.success || !parsedQuery.success) {
     res.status(400).json({
       success: false,
-      error: parsedParams.success ? parsedQuery.error.flatten() : parsedParams.error.flatten(),
+      error: parsedParams.success ? parsedQuery.error!.flatten() : parsedParams.error!.flatten(),
     });
     return;
   }
