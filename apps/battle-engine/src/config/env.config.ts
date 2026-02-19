@@ -10,6 +10,7 @@ dotenv.config(); // also load from process cwd as fallback
 const envSchema = z.object({
   // Server
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  PORT: z.string().transform(Number).optional(),
   SERVER_PORT: z.string().transform(Number).default('4000'),
   
   // Database
@@ -47,6 +48,9 @@ const parseEnv = () => {
 export const env = parseEnv();
 
 // Export commonly used values
+// Railway injects PORT; fall back to SERVER_PORT for local dev
+export const EFFECTIVE_PORT = env.PORT ?? env.SERVER_PORT;
+
 export const {
   NODE_ENV,
   SERVER_PORT,

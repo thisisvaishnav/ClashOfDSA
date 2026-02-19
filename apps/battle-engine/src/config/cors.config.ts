@@ -3,7 +3,7 @@ import { CLIENT_URL, isProduction } from './env.config';
 
 export const corsConfig: CorsOptions = {
   origin: isProduction 
-    ? [CLIENT_URL, 'https://www.DSADash.fun']
+    ? [CLIENT_URL]
     : ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],

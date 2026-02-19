@@ -6,7 +6,7 @@ import { db } from "./core/database/db.client";
 import { redis } from "./core/queue/redis.client";
 import { initSocket } from "./core/socket/socket.manager";
 import { corsConfig } from "./config/cors.config";
-import { SERVER_PORT } from "./config/env.config";
+import { EFFECTIVE_PORT } from "./config/env.config";
 import { authRouter } from "./features/auth/auth.routes";
 import { submissionRouter } from "./features/submission/submission.routes";
 
@@ -23,8 +23,8 @@ const startServer = async () => {
   const server = http.createServer(app);
   const io = initSocket(server);
 
-  server.listen(SERVER_PORT, () => {
-    console.log(`Server running on http://localhost:${SERVER_PORT}`);
+  server.listen(EFFECTIVE_PORT, () => {
+    console.log(`Server running on port ${EFFECTIVE_PORT}`);
   });
 
   return { server, io };
