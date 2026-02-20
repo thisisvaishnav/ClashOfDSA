@@ -30,6 +30,9 @@ const envSchema = z.object({
   // Client
   CLIENT_URL: z.string().default('http://localhost:3000'),
   
+  // Cookie (for cross-subdomain auth)
+  COOKIE_DOMAIN: z.string().optional(),
+  
   // Match Config
   MATCH_DURATION_MINUTES: z.string().transform(Number).default('15'),
   MATCH_QUESTIONS_COUNT: z.string().transform(Number).default('5'),
@@ -59,6 +62,7 @@ export const {
   CLIENT_URL,
   BETTER_AUTH_SECRET,
   BETTER_AUTH_URL,
+  COOKIE_DOMAIN,
   MATCH_DURATION_MINUTES,
   MATCH_QUESTIONS_COUNT,
 } = env;

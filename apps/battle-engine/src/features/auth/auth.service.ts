@@ -5,6 +5,8 @@ import {
   BETTER_AUTH_SECRET,
   BETTER_AUTH_URL,
   CLIENT_URL,
+  COOKIE_DOMAIN,
+  isProduction,
 } from '../../config/env.config';
 
 // ─── Better Auth Instance ────────────────────────────────────────────
@@ -32,6 +34,16 @@ export const auth = betterAuth({
     cookieCache: {
       enabled: true,
       maxAge: 5 * 60, // 5 minutes
+    },
+  },
+
+  advanced: {
+    crossSubDomainCookies: COOKIE_DOMAIN
+      ? { enabled: true, domain: COOKIE_DOMAIN }
+      : { enabled: false },
+    defaultCookieAttributes: {
+      secure: isProduction,
+      sameSite: isProduction ? 'none' as const : 'lax' as const,
     },
   },
 

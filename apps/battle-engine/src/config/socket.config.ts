@@ -4,7 +4,7 @@ import { CLIENT_URL, isProduction } from './env.config';
 export const socketConfig: Partial<ServerOptions> = {
   cors: {
     origin: isProduction
-      ? [CLIENT_URL, 'https://www.dsaDASH.fun']
+      ? [CLIENT_URL]
       : ['http://localhost:3000', 'http://localhost:5173'],
     credentials: true,
     methods: ['GET', 'POST'],
