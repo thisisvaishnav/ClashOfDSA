@@ -1,197 +1,261 @@
-# DSA Dash
+# Contributing to DSA Dash
 
-A real-time competitive DSA (Data Structures & Algorithms) battle platform where users are matched against opponents to solve coding problems head-to-head.
+Thank you for your interest in contributing to DSA Dash. This document covers everything you need to get started.
 
-## Tech Stack
+---
 
-- **Frontend**: Next.js, React, TypeScript, TailwindCSS
-- **Backend**: Express, Socket.IO, Better Auth
-- **Database**: PostgreSQL (Neon) + Prisma ORM
-- **Queue/Cache**: Redis
-- **Monorepo**: TurboRepo + pnpm workspaces
+## Table of Contents
 
-## Project Structure
+- [Project Overview](#project-overview)
+- [Prerequisites](#prerequisites)
+- [Local Setup](#local-setup)
+- [Project Structure](#project-structure)
+- [Development Workflow](#development-workflow)
+- [Code Style](#code-style)
+- [Submitting Changes](#submitting-changes)
+- [Reporting Issues](#reporting-issues)
 
-```
-DSADash/
-├── apps/
-│   ├── web/                        # Next.js frontend
-│   ├── server/                     # Express + Socket.IO backend
-│   │   └── src/
-│   │       ├── config/             # Configuration
-│   │       │   ├── env.config.ts   # Zod-validated environment variables
-│   │       │   ├── cors.config.ts  # CORS settings
-│   │       │   └── socket.config.ts# Socket.IO config
-│   │       ├── core/               # Core infrastructure
-│   │       │   ├── socket/
-│   │       │   │   ├── socket.manager.ts   # Socket.IO singleton manager
-│   │       │   │   └── socket.types.ts     # Typed Socket.IO events
-│   │       │   ├── database/
-│   │       │   │   └── db.client.ts        # Prisma client wrapper
-│   │       │   └── queue/
-│   │       │       └── redis.client.ts     # Redis client wrapper
-│   │       └── index.ts
-│   └── worker/                     # Background job worker
-├── packages/
-│   ├── db/                         # Prisma schema + client
-│   │   ├── prisma/
-│   │   │   └── schema.prisma       # Database schema
-│   │   └── src/
-│   │       ├── index.ts            # Prisma client singleton
-│   │       └── seed.ts             # Database seeder
-│   ├── types/                      # Shared TypeScript types
-│   ├── queue/                      # Queue management
-│   ├── ui/                         # Shared UI components
-│   ├── eslint-config/              # ESLint configuration
-│   └── typescript-config/          # Shared tsconfig presets
-├── turbo.json
-├── pnpm-workspace.yaml
-└── package.json
-```
+---
 
-## Database Schema
+## Project Overview
 
-| Model              | Purpose                                    |
-| ------------------- | ------------------------------------------ |
-| `User`              | Auth, profile, ELO rating (default 1200)   |
-| `Account`           | OAuth provider accounts (Google, GitHub)    |
-| `Session`           | Token-based session management             |
-| `Verification`      | Email/token verification                   |
-| `Question`          | DSA problems with category + test cases    |
-| `Match`             | Competitive match (WAITING/RUNNING/FINISHED) |
-| `MatchParticipant`  | Links users to matches + rating changes    |
-| `MatchQuestion`     | Ordered questions assigned to a match      |
-| `Submission`        | User code submissions per match            |
-| `FriendRequest`     | Friend request system (PENDING/ACCEPTED/REJECTED) |
-| `Friend`            | Established friendships                    |
-| `Message`           | Direct messages between users              |
-| `Feedback`          | User feedback                              |
-| `LeaderboardEntry`  | Rankings, wins/losses, streaks             |
+DSA Dash is a real-time competitive DSA battle platform built as a **TurboRepo monorepo** with three main apps:
 
-## Socket Events
+| App | Description | Port |
+|-----|-------------|------|
+| `apps/web` | Next.js frontend | 3000 |
+| `apps/battle-engine` | Express + Socket.IO backend | 4000 |
+| `apps/worker` | BullMQ background job processor | — |
 
-### Client to Server
+Shared code lives in `packages/` (database client, types, UI components, queue config).
 
-| Event                | Payload                                     |
-| -------------------- | ------------------------------------------- |
-| `match:join-queue`   | `{ userId }`                                |
-| `match:leave-queue`  | `{ userId }`                                |
-| `match:submit-code`  | `{ matchId, questionId, code, language }`   |
-| `match:ready`        | `{ matchId, userId }`                       |
-| `chat:send-message`  | `{ receiverId, content }`                   |
+---
 
-### Server to Client
+## Prerequisites
 
-| Event                     | Payload                                          |
-| ------------------------- | ------------------------------------------------ |
-| `match:found`             | `{ matchId, opponent, questions }`               |
-| `match:started`           | `{ matchId, startedAt }`                         |
-| `match:submission-result` | `{ questionId, status, testsPassed, totalTests }` |
-| `match:opponent-progress` | `{ questionId, solved }`                         |
-| `match:timer-update`      | `{ matchId, remainingSeconds }`                  |
-| `match:ended`             | `{ matchId, winnerId, ratingChanges }`           |
+Make sure you have the following installed:
 
-## Getting Started
+- **Node.js** >= 22
+- **pnpm** >= 9.0.0 — `npm install -g pnpm`
+- **PostgreSQL** — local install or a [Neon](https://neon.tech) account
+- **Redis** — local install or a cloud Redis instance
 
-### Prerequisites
+---
 
-- Node.js >= 18
-- pnpm >= 9
-- PostgreSQL (or Neon account)
-- Redis
+## Local Setup
 
-### Installation
+### 1. Fork and clone
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/DSADash.git
-cd DSADash
+git clone https://github.com/<your-username>/clashofdsa.git
+cd clashofdsa
+```
 
-# Install dependencies
+### 2. Install dependencies
+
+```bash
 pnpm install
 ```
 
-### Environment Variables
+### 3. Set up environment variables
 
-Create a `.env` file in `packages/db/`:
+Copy the example env file and fill in your values:
 
-```env
-DATABASE_URL="postgresql://user:password@host:port/database?sslmode=require"
+```bash
+cp .env.example .env
 ```
 
-Create a `.env` file in `apps/server/` (or root):
+Key variables to configure:
 
 ```env
 NODE_ENV=development
 SERVER_PORT=4000
-DATABASE_URL=postgresql://user:password@host:port/database?sslmode=require
-REDIS_URL=redis://localhost:6379
-BETTER_AUTH_SECRET=your-secret-key
-BETTER_AUTH_URL=http://localhost:4000
 CLIENT_URL=http://localhost:3000
+
+DATABASE_URL="postgresql://user:password@localhost:5432/dsadash"
+REDIS_URL="redis://localhost:6379"
+
+BETTER_AUTH_SECRET="any-random-secret"
+BETTER_AUTH_URL="http://localhost:4000"
+
+NEXT_PUBLIC_API_URL="http://localhost:4000"
+
 MATCH_DURATION_MINUTES=15
 MATCH_QUESTIONS_COUNT=5
+WORKER_CONCURRENCY=5
+CODE_EXECUTION_TIMEOUT_MS=5000
 ```
 
-### Database Setup
+### 4. Set up the database
 
 ```bash
 cd packages/db
 
-# Generate Prisma Client
+# Generate the Prisma client
 npx prisma generate
 
 # Run migrations
 npx prisma migrate dev
 
-# (Optional) Seed the database
+# (Optional) Seed with sample data
 pnpm db:seed
 
-# (Optional) Open Prisma Studio
+# (Optional) Open the GUI
 npx prisma studio
 ```
 
-### Development
+### 5. Start the development servers
 
 ```bash
-# Run all apps
+# From the project root — starts all apps in parallel
 pnpm dev
-
-# Run specific app
-pnpm dev --filter=web
-pnpm dev --filter=server
 ```
 
-### Build
+Or run each app independently in separate terminals:
 
 ```bash
-# Build all apps and packages
-pnpm build
-
-# Build a specific app
-pnpm build --filter=web
+pnpm dev --filter=battle-engine   # Terminal 1
+pnpm dev --filter=web             # Terminal 2
+pnpm dev --filter=worker          # Terminal 3
 ```
 
-## Scripts
+---
 
-| Command            | Description                        |
-| ------------------ | ---------------------------------- |
-| `pnpm dev`         | Start all apps in development mode |
-| `pnpm build`       | Build all apps and packages        |
-| `pnpm lint`        | Lint all packages                  |
-| `pnpm format`      | Format code with Prettier          |
-| `pnpm check-types` | Run TypeScript type checking       |
+## Project Structure
 
-### Database Scripts (in `packages/db`)
+```
+clashofdsa/
+├── apps/
+│   ├── web/                    # Next.js frontend (App Router)
+│   │   ├── app/                # Pages & layouts
+│   │   ├── components/         # React components
+│   │   ├── hooks/              # Custom React hooks
+│   │   └── lib/                # Utilities (socket, auth, api)
+│   ├── battle-engine/          # Express + Socket.IO backend
+│   │   └── src/
+│   │       ├── config/         # Env, CORS, Socket.IO config
+│   │       ├── core/           # DB client, Redis client, Socket manager
+│   │       └── features/       # Feature modules (match, auth, chat, etc.)
+│   └── worker/                 # BullMQ job processor
+│       └── src/
+│           ├── processors/     # Job processing logic
+│           └── workers/        # Worker setup
+└── packages/
+    ├── db/                     # Prisma schema & client singleton
+    ├── types/                  # Shared TypeScript types
+    ├── queue/                  # Redis & BullMQ queue definitions
+    ├── ui/                     # Shared React component library
+    ├── eslint-config/          # Shared ESLint rules
+    └── typescript-config/      # Shared tsconfig presets
+```
 
-| Command             | Description                      |
-| ------------------- | -------------------------------- |
-| `pnpm db:generate`  | Generate Prisma Client           |
-| `pnpm db:push`      | Push schema to database (dev)    |
-| `pnpm db:migrate`   | Run database migrations          |
-| `pnpm db:studio`    | Open Prisma Studio GUI           |
-| `pnpm db:seed`      | Seed database with sample data   |
+### Feature module pattern
 
-## License
+Each feature in `apps/battle-engine/src/features/` follows this structure:
 
-MIT
+```
+features/<name>/
+├── <name>.types.ts       # TypeScript interfaces
+├── <name>.service.ts     # Business logic
+├── <name>.controller.ts  # HTTP request handlers
+├── <name>.routes.ts      # Express route definitions
+├── <name>.socket.ts      # Socket.IO event handlers
+└── <name>.validator.ts   # Zod input validation schemas
+```
+
+Follow this pattern when adding a new feature.
+
+---
+
+## Development Workflow
+
+### Branching
+
+Branch off from `main`. Use descriptive branch names:
+
+```
+feat/matchmaking-timeout
+fix/elo-calculation-bug
+chore/update-prisma
+docs/contributing-guide
+```
+
+### Useful scripts
+
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start all apps in dev mode |
+| `pnpm build` | Build all apps and packages |
+| `pnpm lint` | Run ESLint across the monorepo |
+| `pnpm format` | Format code with Prettier |
+| `pnpm check-types` | TypeScript type checking |
+
+**Database scripts** (run from `packages/db`):
+
+| Command | Description |
+|---------|-------------|
+| `pnpm db:generate` | Regenerate Prisma client after schema changes |
+| `pnpm db:migrate` | Run database migrations |
+| `pnpm db:push` | Push schema directly (development only) |
+| `pnpm db:seed` | Seed the database with sample data |
+| `pnpm db:studio` | Open Prisma Studio |
+
+### Making schema changes
+
+1. Edit `packages/db/prisma/schema.prisma`
+2. Run `npx prisma migrate dev --name <description>` from `packages/db`
+3. Run `npx prisma generate` to update the client
+4. Update any affected TypeScript types in `packages/types`
+
+---
+
+## Code Style
+
+- **TypeScript** — all new code must be typed. Avoid `any`.
+- **Prettier** — formatting is enforced. Run `pnpm format` before committing.
+- **ESLint** — run `pnpm lint` and fix all errors before opening a PR.
+- **Zod** — use Zod schemas for all user input and external data validation at feature boundaries.
+- **No unused imports/variables** — keep code clean.
+
+---
+
+## Submitting Changes
+
+1. Ensure your branch is up to date with `main`:
+   ```bash
+   git fetch origin
+   git rebase origin/main
+   ```
+
+2. Run all checks:
+   ```bash
+   pnpm lint
+   pnpm check-types
+   pnpm build
+   ```
+
+3. Commit with a clear message describing **what** and **why**:
+   ```
+   feat: add match timeout handling for idle players
+   fix: correct ELO delta calculation on draw
+   chore: bump Prisma to 6.3.0
+   ```
+
+4. Push your branch and open a Pull Request against `main`.
+
+5. In your PR description, include:
+   - A summary of what changed and why
+   - Steps to test the change locally
+   - Any database migrations or environment variable changes required
+
+---
+
+## Reporting Issues
+
+Open a GitHub Issue and include:
+
+- A clear description of the bug or feature request
+- Steps to reproduce (for bugs)
+- Expected vs actual behavior
+- Your environment (OS, Node version, pnpm version)
+- Relevant logs or screenshots if applicable
