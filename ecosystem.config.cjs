@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "web",
-      cwd: "./apps/web/.next/standalone",
+      cwd: "./apps/web/.next/standalone/apps/web",
       script: "server.js",
       env: {
         NODE_ENV: "production",
