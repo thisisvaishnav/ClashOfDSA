@@ -57,6 +57,13 @@ type ChatMessage = {
   createdAt: string;
 };
 
+type UserSearchResult = {
+  id: string;
+  name: string;
+  image: string | null;
+  rating: number;
+};
+
 type FriendsTab = "friends" | "requests";
 
 /* ────────────────────────────────────────────────────────────
@@ -393,13 +400,18 @@ const FriendsPage = () => {
   const [activeTab, setActiveTab] = useState<FriendsTab>("friends");
   const [selectedFriend, setSelectedFriend] = useState<FriendItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [addFriendId, setAddFriendId] = useState("");
-  const [addFriendLoading, setAddFriendLoading] = useState(false);
+  const [addFriendQuery, setAddFriendQuery] = useState("");
+  const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([]);
+  const [userSearchLoading, setUserSearchLoading] = useState(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [sendingRequestTo, setSendingRequestTo] = useState<string | null>(null);
   const [addFriendMsg, setAddFriendMsg] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const searchDropdownRef = useRef<HTMLDivElement>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadFriends = useCallback(async () => {
     setLoadingFriends(true);
@@ -435,22 +447,66 @@ const FriendsPage = () => {
     };
   }, [currentUserId]);
 
-  const handleAddFriend = async () => {
-    const id = addFriendId.trim();
-    if (!id) return;
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        searchDropdownRef.current &&
+        !searchDropdownRef.current.contains(e.target as Node)
+      ) {
+        setShowSearchDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-    setAddFriendLoading(true);
+  const handleSearchUsers = (query: string) => {
+    setAddFriendQuery(query);
+    setAddFriendMsg(null);
+
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+
+    if (query.trim().length < 2) {
+      setUserSearchResults([]);
+      setShowSearchDropdown(false);
+      return;
+    }
+
+    searchDebounceRef.current = setTimeout(async () => {
+      setUserSearchLoading(true);
+      const result = await apiFetch<UserSearchResult[]>(
+        `/api/users/search?q=${encodeURIComponent(query.trim())}&limit=8`,
+      );
+      if (result.success && result.data) {
+        const friendIds = new Set(friends.map((f) => f.userId));
+        const filtered = result.data.filter((u) => !friendIds.has(u.id));
+        setUserSearchResults(filtered);
+      } else {
+        setUserSearchResults([]);
+      }
+      setUserSearchLoading(false);
+      setShowSearchDropdown(true);
+    }, 300);
+  };
+
+  const handleSendFriendRequest = async (userId: string, userName: string) => {
+    setSendingRequestTo(userId);
     setAddFriendMsg(null);
 
     const result = await apiFetch<FriendRequestItem>("/api/friends/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ addresseeId: id }),
+      body: JSON.stringify({ addresseeId: userId }),
     });
 
     if (result.success) {
-      setAddFriendMsg({ type: "success", text: "Friend request sent!" });
-      setAddFriendId("");
+      setAddFriendMsg({
+        type: "success",
+        text: `Friend request sent to ${userName}!`,
+      });
+      setAddFriendQuery("");
+      setUserSearchResults([]);
+      setShowSearchDropdown(false);
       loadRequests();
     } else {
       setAddFriendMsg({
@@ -458,7 +514,7 @@ const FriendsPage = () => {
         text: result.error ?? "Failed to send request",
       });
     }
-    setAddFriendLoading(false);
+    setSendingRequestTo(null);
   };
 
   const handleAcceptRequest = async (requestId: string) => {
@@ -658,37 +714,103 @@ const FriendsPage = () => {
 
               {activeTab === "requests" && (
                 <>
-                  {/* Add Friend */}
-                  <div className="p-4 border-b-[2px] border-game-navy/10">
+                  {/* Add Friend by Name Search */}
+                  <div
+                    ref={searchDropdownRef}
+                    className="p-4 border-b-[2px] border-game-navy/10 relative"
+                  >
                     <p className="text-[10px] font-bold text-game-navy/50 uppercase tracking-wider mb-2">
                       Add a Friend
                     </p>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={addFriendId}
-                        onChange={(e) => setAddFriendId(e.target.value)}
-                        placeholder="Enter user ID…"
-                        className="flex-1 px-3 py-2 border-[2px] border-game-navy/20 rounded-sm bg-game-cream-dark text-sm text-game-navy font-medium placeholder:text-game-navy/30 focus:outline-none focus:border-game-navy/40 transition-colors"
-                        aria-label="Friend user ID"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleAddFriend();
-                        }}
-                      />
-                      <GameIconButton
-                        variant="blue"
-                        size="md"
-                        aria-label="Send friend request"
-                        onClick={handleAddFriend}
-                        disabled={!addFriendId.trim() || addFriendLoading}
-                      >
-                        {addFriendLoading ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <UserPlus size={14} />
+                    <div className="relative">
+                      <div className="flex items-center gap-2 px-3 py-2 border-[2px] border-game-navy/20 rounded-sm bg-game-cream-dark focus-within:border-game-navy/40 transition-colors">
+                        <Search size={14} className="text-game-navy/30 shrink-0" />
+                        <input
+                          type="text"
+                          value={addFriendQuery}
+                          onChange={(e) => handleSearchUsers(e.target.value)}
+                          onFocus={() => {
+                            if (userSearchResults.length > 0)
+                              setShowSearchDropdown(true);
+                          }}
+                          placeholder="Search by name…"
+                          className="flex-1 bg-transparent text-sm text-game-navy font-medium placeholder:text-game-navy/30 focus:outline-none"
+                          aria-label="Search users by name"
+                        />
+                        {userSearchLoading && (
+                          <Loader2
+                            size={14}
+                            className="animate-spin text-game-navy/30 shrink-0"
+                          />
                         )}
-                      </GameIconButton>
+                      </div>
+
+                      {/* Search Results Dropdown */}
+                      {showSearchDropdown && (
+                        <div className="absolute left-0 right-0 top-full mt-1 z-20 border-[2px] border-game-navy/20 rounded-sm bg-game-cream overflow-hidden shadow-[3px_3px_0px_var(--color-game-navy)]">
+                          {userSearchResults.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-6 gap-1">
+                              <Users className="h-6 w-6 text-game-navy/15" />
+                              <p className="text-[10px] font-bold text-game-navy/30 uppercase">
+                                {addFriendQuery.trim().length < 2
+                                  ? "Type at least 2 characters"
+                                  : "No users found"}
+                              </p>
+                            </div>
+                          ) : (
+                            userSearchResults.map((user) => {
+                              const tier = getRatingTier(user.rating);
+                              const isSending = sendingRequestTo === user.id;
+                              return (
+                                <div
+                                  key={user.id}
+                                  className="flex items-center gap-3 px-3 py-2.5 border-b-[2px] border-game-navy/5 last:border-b-0 hover:bg-game-amber/5 transition-colors"
+                                >
+                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center border-[2px] border-game-navy/20 rounded-sm bg-game-cream-dark text-xs font-bold text-game-navy">
+                                    {user.name.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold text-game-navy uppercase truncate">
+                                      {user.name}
+                                    </p>
+                                    <div className="flex items-center gap-1.5">
+                                      <span
+                                        className={`text-[9px] font-bold ${tier.color}`}
+                                      >
+                                        {tier.label}
+                                      </span>
+                                      <span className="text-[9px] text-game-navy/30">
+                                        •
+                                      </span>
+                                      <span className="text-[9px] font-bold text-game-navy/40">
+                                        {user.rating}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() =>
+                                      handleSendFriendRequest(user.id, user.name)
+                                    }
+                                    disabled={isSending}
+                                    className="flex h-7 items-center gap-1 px-2 border-[2px] border-game-navy rounded-sm bg-game-blue text-game-cream text-[10px] font-bold uppercase hover:bg-game-blue/80 transition-colors cursor-pointer disabled:opacity-50"
+                                    aria-label={`Send friend request to ${user.name}`}
+                                    tabIndex={0}
+                                  >
+                                    {isSending ? (
+                                      <Loader2 size={10} className="animate-spin" />
+                                    ) : (
+                                      <UserPlus size={10} />
+                                    )}
+                                    Add
+                                  </button>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
                     </div>
+
                     {addFriendMsg && (
                       <div className="mt-2">
                         <GameAlert
@@ -807,7 +929,7 @@ const FriendsPage = () => {
                           No pending requests
                         </p>
                         <p className="text-[10px] text-game-navy/20 font-medium">
-                          Add a friend by their user ID above
+                          Search for a friend by name above
                         </p>
                       </div>
                     )
