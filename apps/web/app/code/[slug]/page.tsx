@@ -376,9 +376,9 @@ const Page = () => {
               <Shield size={18} className="text-game-navy" />
             </div>
             <span className="font-bold text-game-cream tracking-tight text-sm uppercase">
-              Code Battle
+              Clash of DSA
             </span>
-          </div>
+          </div>s
 
           {/* Player stats */}
           <div className="hidden sm:flex items-center gap-2 pl-3 border-l-[2px] border-game-navy-light">

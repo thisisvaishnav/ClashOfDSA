@@ -12,7 +12,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "DSADash — 1v1 DSA Battles",
+  title: "Clash of DSA — 1v1 DSA Battles",
   description:
     "Compete in real-time data structures & algorithms battles. Solve problems, climb the leaderboard.",
 };

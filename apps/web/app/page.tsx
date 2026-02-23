@@ -113,7 +113,7 @@ const HomePage = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-game-navy tracking-tight uppercase">
-              Code Battle
+              Clash of DSA
             </h1>
             <p className="text-[10px] font-bold text-game-navy/50 uppercase tracking-widest">
               1v1 DSA Arena
@@ -222,7 +222,7 @@ const HomePage = () => {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-game-navy tracking-tight uppercase">
-            Code Battle
+            Clash of DSA
           </h1>
           <p className="text-[10px] font-bold text-game-navy/50 uppercase tracking-widest">
             1v1 DSA Arena

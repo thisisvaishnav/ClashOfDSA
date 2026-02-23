@@ -62,7 +62,7 @@ type MatchCard = {
 const MATCH_CARDS: MatchCard[] = [
   {
     id: "quick-match",
-    title: "Quick Match",
+    title: " 🔥 Quick Match 🔥 ",
     description: "Instant 1v1 coding battle against a random opponent",
     status: "active",
     icon: <Zap className="h-6 w-6" />,
