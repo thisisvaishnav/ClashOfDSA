@@ -22,6 +22,15 @@ export const initSocket = (server: http.Server): TypedServer => {
 
   io.on('connection', (socket) => {
     const { userId, userName } = socket.data;
+
+    const existingSocketId = userSockets.get(userId);
+    if (existingSocketId) {
+      const existingSocket = io!.sockets.sockets.get(existingSocketId);
+      if (existingSocket) {
+        existingSocket.disconnect(true);
+      }
+    }
+
     userSockets.set(userId, socket.id);
     console.log(`🟢 ${userName} connected (${userSockets.size} online)`);
 

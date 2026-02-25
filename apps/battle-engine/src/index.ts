@@ -1,12 +1,14 @@
 import http from "http";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 
 import { db } from "./core/database/db.client";
 import { redis } from "./core/queue/redis.client";
 import { initSocket } from "./core/socket/socket.manager";
 import { corsConfig } from "./config/cors.config";
 import { EFFECTIVE_PORT } from "./config/env.config";
+import { globalLimiter, authLimiter, publicLimiter, searchLimiter, friendRequestLimiter, chatSendLimiter } from "./middleware/rate-limiter";
 import { authRouter } from "./features/auth/auth.routes";
 import { submissionRouter } from "./features/submission/submission.routes";
 import { friendRouter } from "./features/social/friend.routes";
@@ -17,8 +19,20 @@ import { userRouter } from "./features/user/user.routes";
 
 const app = express();
 
+// ─── Security Middleware ──────────────────────────────────────────────
+app.use(helmet());
 app.use(cors(corsConfig));
-app.use(express.json());
+app.use(express.json({ limit: "10kb" }));
+app.use(globalLimiter);
+
+// ─── Per-Route Rate Limiters ──────────────────────────────────────────
+app.use("/api/auth", authLimiter);
+app.use("/api/leaderboard", publicLimiter);
+app.use("/api/users/search", searchLimiter);
+app.use("/api/friends/request", friendRequestLimiter);
+app.use("/api/chat", chatSendLimiter);
+
+// ─── Route Handlers ──────────────────────────────────────────────────
 app.use(authRouter);
 app.use(submissionRouter);
 app.use(friendRouter);

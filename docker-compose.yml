@@ -1,0 +1,103 @@
+services:
+  # ── PostgreSQL ─────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: clashofdsa
+      POSTGRES_PASSWORD: clashofdsa_secret
+      POSTGRES_DB: clashofdsa
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clashofdsa"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ──────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Next.js Frontend ───────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+      args:
+        DATABASE_URL: postgresql://clashofdsa:clashofdsa_secret@postgres:5432/clashofdsa
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    depends_on:
+      battle-engine:
+        condition: service_started
+
+  # ── Battle Engine API ──────────────────────────────────────────────
+  battle-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: battle-engine
+      args:
+        DATABASE_URL: postgresql://clashofdsa:clashofdsa_secret@postgres:5432/clashofdsa
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      SERVER_PORT: "4000"
+      DATABASE_URL: postgresql://clashofdsa:clashofdsa_secret@postgres:5432/clashofdsa
+      REDIS_URL: redis://redis:6379
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-change-me-in-production}
+      BETTER_AUTH_URL: http://localhost:4000
+      CLIENT_URL: http://localhost:3000
+      MATCH_DURATION_MINUTES: "15"
+      MATCH_QUESTIONS_COUNT: "5"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── Background Worker ──────────────────────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+      args:
+        DATABASE_URL: postgresql://clashofdsa:clashofdsa_secret@postgres:5432/clashofdsa
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://clashofdsa:clashofdsa_secret@postgres:5432/clashofdsa
+      REDIS_URL: redis://redis:6379
+      WORKER_CONCURRENCY: "5"
+      CODE_EXECUTION_TIMEOUT_MS: "4999"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:

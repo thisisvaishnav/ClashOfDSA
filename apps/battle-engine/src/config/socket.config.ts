@@ -13,4 +13,8 @@ export const socketConfig: Partial<ServerOptions> = {
   pingTimeout: 20000,
   connectTimeout: 10000,
   transports: ['websocket', 'polling'],
+  maxHttpBufferSize: 1e6,
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000,
+  },
 };

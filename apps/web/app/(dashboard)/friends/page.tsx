@@ -150,7 +150,7 @@ const ChatPanel = ({ friend, currentUserId, onBack }: ChatPanelProps) => {
   }, [messages, scrollToBottom]);
 
   useEffect(() => {
-    const socket = connectSocket();
+    const socket = getSocket() ?? connectSocket();
 
     const handleNewMessage = (data: {
       id: string;
@@ -158,39 +158,41 @@ const ChatPanel = ({ friend, currentUserId, onBack }: ChatPanelProps) => {
       content: string;
       createdAt: string;
     }) => {
-      if (
-        data.senderId === friend.userId ||
-        data.senderId === currentUserId
-      ) {
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === data.id)) return prev;
-          return [
-            ...prev,
-            {
-              id: data.id,
-              senderId: data.senderId,
-              receiverId:
-                data.senderId === currentUserId
-                  ? friend.userId
-                  : currentUserId,
-              content: data.content,
-              createdAt: data.createdAt,
-            },
-          ];
-        });
-      }
+      const isRelevant =
+        data.senderId === friend.userId || data.senderId === currentUserId;
+      if (!isRelevant) return;
+
+      setMessages((prev) => {
+        const exists = prev.some(
+          (m) => m.id === data.id || (m.id.startsWith("optimistic-") && m.senderId === data.senderId && m.content === data.content),
+        );
+        if (exists) {
+          return prev.map((m) =>
+            m.id.startsWith("optimistic-") && m.senderId === data.senderId && m.content === data.content
+              ? { ...m, id: data.id, createdAt: data.createdAt }
+              : m,
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: data.id,
+            senderId: data.senderId,
+            receiverId:
+              data.senderId === currentUserId ? friend.userId : currentUserId,
+            content: data.content,
+            createdAt: data.createdAt,
+          },
+        ];
+      });
     };
 
     const handleUserTyping = (data: { userId: string }) => {
-      if (data.userId === friend.userId) {
-        setIsTyping(true);
-      }
+      if (data.userId === friend.userId) setIsTyping(true);
     };
 
     const handleUserStopTyping = (data: { userId: string }) => {
-      if (data.userId === friend.userId) {
-        setIsTyping(false);
-      }
+      if (data.userId === friend.userId) setIsTyping(false);
     };
 
     socket.on("chat:new-message", handleNewMessage);
@@ -211,6 +213,16 @@ const ChatPanel = ({ friend, currentUserId, onBack }: ChatPanelProps) => {
     setSending(true);
     setNewMessage("");
 
+    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticMsg: ChatMessage = {
+      id: optimisticId,
+      senderId: currentUserId,
+      receiverId: friend.userId,
+      content,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+
     const socket = getSocket();
     if (socket?.connected) {
       socket.emit("chat:send-message", {
@@ -219,11 +231,23 @@ const ChatPanel = ({ friend, currentUserId, onBack }: ChatPanelProps) => {
       });
       socket.emit("chat:stop-typing", { receiverId: friend.userId });
     } else {
-      await apiFetch<ChatMessage>(`/api/chat/${friend.userId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
-      });
+      const result = await apiFetch<ChatMessage>(
+        `/api/chat/${friend.userId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        },
+      );
+      if (result.success && result.data) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === optimisticId
+              ? { ...result.data!, id: result.data!.id }
+              : m,
+          ),
+        );
+      }
     }
 
     setSending(false);

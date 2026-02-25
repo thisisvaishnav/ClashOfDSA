@@ -4,11 +4,8 @@ const SOCKET_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 let socket: Socket | null = null;
+let connectionRefCount = 0;
 
-/**
- * Extract the Better Auth session token from browser cookies.
- * The backend socket middleware expects this as a Bearer token.
- */
 const getSessionToken = (): string | null => {
   if (typeof document === "undefined") return null;
 
@@ -16,23 +13,19 @@ const getSessionToken = (): string | null => {
     /(?:^|;\s*)better-auth\.session_token=([^;]*)/
   );
 
-  return match ? decodeURIComponent(match[1] ?? ""  ) : null;
+  return match ? decodeURIComponent(match[1] ?? "") : null;
 };
 
-/**
- * Get the existing socket instance (may be null if not yet connected).
- */
 export const getSocket = (): Socket | null => socket;
 
-/**
- * Create & connect a Socket.IO client authenticated with the session token.
- * Returns the existing connected socket if one already exists.
- */
 export const connectSocket = (): Socket => {
+  connectionRefCount++;
+
   if (socket?.connected) return socket;
 
-  if (socket) {
-    socket.disconnect();
+  if (socket && !socket.connected) {
+    socket.connect();
+    return socket;
   }
 
   const token = getSessionToken();
@@ -40,16 +33,19 @@ export const connectSocket = (): Socket => {
   socket = io(SOCKET_URL, {
     auth: { token },
     transports: ["websocket", "polling"],
+    reconnection: true,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
   });
 
   return socket;
 };
 
-/**
- * Disconnect and destroy the socket instance.
- */
 export const disconnectSocket = (): void => {
-  if (socket) {
+  connectionRefCount = Math.max(0, connectionRefCount - 1);
+
+  if (connectionRefCount === 0 && socket) {
     socket.disconnect();
     socket = null;
   }
