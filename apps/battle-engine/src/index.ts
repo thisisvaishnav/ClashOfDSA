@@ -20,13 +20,18 @@ import { userRouter } from "./features/user/user.routes";
 const app = express();
 
 // ─── Security Middleware ──────────────────────────────────────────────
-app.use(helmet());
 app.use(cors(corsConfig));
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: false,
+}));
 app.use(express.json({ limit: "10kb" }));
 app.use(globalLimiter);
 
 // ─── Per-Route Rate Limiters ──────────────────────────────────────────
-app.use("/api/auth", authLimiter);
+app.use("/api/auth/sign-up", authLimiter);
+app.use("/api/auth/sign-in", authLimiter);
 app.use("/api/leaderboard", publicLimiter);
 app.use("/api/users/search", searchLimiter);
 app.use("/api/friends/request", friendRequestLimiter);
