@@ -65,11 +65,11 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
-COPY --from=deps    /app/node_modules                          ./node_modules
-COPY --from=deps    /app/apps/battle-engine/node_modules       ./apps/battle-engine/node_modules
-COPY --from=deps    /app/packages/db/node_modules              ./packages/db/node_modules
-COPY --from=deps    /app/packages/queue/node_modules           ./packages/queue/node_modules
-COPY --from=deps    /app/packages/types/node_modules           ./packages/types/node_modules
+COPY --from=builder /app/node_modules                          ./node_modules
+COPY --from=builder /app/apps/battle-engine/node_modules       ./apps/battle-engine/node_modules
+COPY --from=builder /app/packages/db/node_modules              ./packages/db/node_modules
+COPY --from=builder /app/packages/queue/node_modules           ./packages/queue/node_modules
+COPY --from=builder /app/packages/types/node_modules           ./packages/types/node_modules
 COPY --from=builder /app/apps/battle-engine/dist               ./apps/battle-engine/dist
 COPY --from=builder /app/packages/db/dist                      ./packages/db/dist
 COPY --from=builder /app/packages/db/prisma                    ./packages/db/prisma
@@ -95,11 +95,11 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
-COPY --from=deps    /app/node_modules                    ./node_modules
-COPY --from=deps    /app/apps/worker/node_modules        ./apps/worker/node_modules
-COPY --from=deps    /app/packages/db/node_modules        ./packages/db/node_modules
-COPY --from=deps    /app/packages/queue/node_modules     ./packages/queue/node_modules
-COPY --from=deps    /app/packages/types/node_modules     ./packages/types/node_modules
+COPY --from=builder /app/node_modules                    ./node_modules
+COPY --from=builder /app/apps/worker/node_modules        ./apps/worker/node_modules
+COPY --from=builder /app/packages/db/node_modules        ./packages/db/node_modules
+COPY --from=builder /app/packages/queue/node_modules     ./packages/queue/node_modules
+COPY --from=builder /app/packages/types/node_modules     ./packages/types/node_modules
 COPY --from=builder /app/apps/worker/dist                ./apps/worker/dist
 COPY --from=builder /app/packages/db/dist                ./packages/db/dist
 COPY --from=builder /app/packages/db/prisma              ./packages/db/prisma
