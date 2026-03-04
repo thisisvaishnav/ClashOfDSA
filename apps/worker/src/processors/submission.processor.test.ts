@@ -99,10 +99,8 @@ describe('normalizeForVm', () => {
     expect(normalizeForVm(input)).toBe(expected);
   });
 
-  it('should not replace const/let inside strings or comments', () => {
-    // Only replaces at the beginning of a line
+  it('should not replace indented const/let (only matches start of line)', () => {
     const input = '  const inner = 5;';
-    // Indented const should not be replaced (not at start of line)
     expect(normalizeForVm(input)).toBe('  const inner = 5;');
   });
 });
