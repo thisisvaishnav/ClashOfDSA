@@ -3,7 +3,6 @@ import { emitToUser } from '../../core/socket/socket.manager';
 import {
   joinQueueSchema,
   leaveQueueSchema,
-  submitCodeSchema,
   readySchema,
 } from './match.validator';
 import {
@@ -121,29 +120,12 @@ export const registerMatchHandlers = (socket: TypedSocket): void => {
     }
   });
 
-  // ── Submit Code ───────────────────────────────────────────────────
-  socket.on('match:submit-code', async (data) => {
-    try {
-      const parsed = submitCodeSchema.safeParse(data);
-      if (!parsed.success) {
-        socket.emit('error', { message: 'Invalid submission payload', code: 'VALIDATION_ERROR' });
-        return;
-      }
-
-      const { matchId, questionId, code, language } = parsed.data;
-      await createSubmission(userId, { matchId, questionId, code, language });
-    } catch (err) {
-      console.error('Error in match:submit-code:', err);
-      socket.emit('error', { message: 'Failed to submit code', code: 'INTERNAL_ERROR' });
-    }
-  });
-
   // ── Cleanup on Disconnect ─────────────────────────────────────────
   socket.on('disconnect', async () => {
     // Remove from queue if still queued
     const inQueue = await isInQueue(userId).catch(() => false);
     if (inQueue) {
-      await removeFromQueue(userId).catch(() => {});
+      await removeFromQueue(userId).catch(() => { });
       console.log(`🚪 ${userName} removed from queue (disconnected)`);
     }
   });

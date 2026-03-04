@@ -16,6 +16,8 @@ import { chatRouter } from "./features/chat/chat.routes";
 import { leaderboardRouter } from "./features/leaderboard/leaderboard.routes";
 import { matchRouter } from "./features/match/match.routes";
 import { userRouter } from "./features/user/user.routes";
+import { SUBMISSION_RESULT_CHANNEL, type SubmissionJobResult } from "@repo/queue";
+import { applySubmissionResult } from "./features/submission/submission.service";
 
 const app = express();
 
@@ -48,6 +50,18 @@ app.use(userRouter);
 
 const startServer = async () => {
   await redis.connect();
+
+  // ─── Subscribe to submission results from the worker ─────────────
+  const subscriber = await redis.getSubscriber();
+  await subscriber.subscribe(SUBMISSION_RESULT_CHANNEL, async (message) => {
+    try {
+      const result: SubmissionJobResult = JSON.parse(message);
+      await applySubmissionResult(result);
+    } catch (err) {
+      console.error('Failed to handle submission result:', err);
+    }
+  });
+  console.log(`✅ Subscribed to ${SUBMISSION_RESULT_CHANNEL}`);
 
   const server = http.createServer(app);
   const io = initSocket(server);
