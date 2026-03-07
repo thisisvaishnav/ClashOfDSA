@@ -323,7 +323,6 @@ const ChatPanel = ({ friend, currentUserId, onBack }: ChatPanelProps) => {
           </p>
         </div>
       </div>
-
       {/* Messages */}
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 bg-game-cream-dark/50">
         {loading ? (
