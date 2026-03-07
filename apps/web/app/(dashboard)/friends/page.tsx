@@ -39,6 +39,9 @@ type FriendItem = {
   since: string;
 };
 
+
+// TYPE FOR FRIEND REQUESTS
+
 type FriendRequestItem = {
   id: string;
   requesterId: string;
@@ -56,6 +59,7 @@ type ChatMessage = {
   content: string;
   createdAt: string;
 };
+
 
 type UserSearchResult = {
   id: string;
@@ -95,7 +99,9 @@ const apiFetch = async <T,>(
 /* ────────────────────────────────────────────────────────────
    Rating Tier Helper
    ──────────────────────────────────────────────────────────── */
+// RATING IS BETWEEN 1200 AND 2000 
 
+// TODO - change the ratting according to the growth of platform 
 const getRatingTier = (
   rating: number,
 ): { label: string; color: string } => {
@@ -110,12 +116,13 @@ const getRatingTier = (
 /* ────────────────────────────────────────────────────────────
    Chat Panel
    ──────────────────────────────────────────────────────────── */
-
+// TODO - change the chat panel to use the new chat system
 type ChatPanelProps = {
   friend: FriendItem;
   currentUserId: string;
   onBack: () => void;
 };
+
 
 const ChatPanel = ({ friend, currentUserId, onBack }: ChatPanelProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -129,7 +136,7 @@ const ChatPanel = ({ friend, currentUserId, onBack }: ChatPanelProps) => {
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
-
+  // THIS LOADS THE MESSAGE AS THE USER 
   const loadMessages = useCallback(async () => {
     setLoading(true);
     const result = await apiFetch<ChatMessage[]>(
@@ -293,7 +300,7 @@ const ChatPanel = ({ friend, currentUserId, onBack }: ChatPanelProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Chat Header */}
       <div className="flex items-center gap-3 px-4 py-3 bg-game-navy">
         <button
@@ -316,9 +323,8 @@ const ChatPanel = ({ friend, currentUserId, onBack }: ChatPanelProps) => {
           </p>
         </div>
       </div>
-
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-game-cream-dark/50">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 bg-game-cream-dark/50">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="h-6 w-6 animate-spin text-game-navy/30" />
@@ -607,7 +613,7 @@ const FriendsPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] gap-6 h-[calc(100vh-260px)] min-h-[500px]">
         {/* ── Left Panel: Friend List ── */}
         <div
-          className={`flex flex-col ${
+          className={`flex flex-col h-full min-h-0 ${
             selectedFriend ? "hidden md:flex" : "flex"
           }`}
         >
@@ -616,7 +622,7 @@ const FriendsPage = () => {
             hasShadow
             shadowSize="sm"
             noPadding
-            className="flex flex-col h-full overflow-hidden"
+            className="flex flex-col flex-1 min-h-0 overflow-hidden"
           >
             <HazardStripe variant="warning" height="sm" />
 
@@ -656,7 +662,7 @@ const FriendsPage = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto">
               {activeTab === "friends" && (
                 <>
                   {/* Search */}
@@ -966,7 +972,7 @@ const FriendsPage = () => {
 
         {/* ── Right Panel: Chat ── */}
         <div
-          className={`${
+          className={`h-full min-h-0 ${
             selectedFriend ? "flex" : "hidden md:flex"
           } flex-col`}
         >
@@ -975,7 +981,7 @@ const FriendsPage = () => {
             hasShadow
             shadowSize="sm"
             noPadding
-            className="flex flex-col h-full overflow-hidden"
+            className="flex flex-col flex-1 min-h-0 overflow-hidden"
           >
             {selectedFriend && currentUserId ? (
               <ChatPanel
