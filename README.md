@@ -1,7 +1,4 @@
 # Contributing to DSA Dash
-
-Thank you for your interest in contributing to DSA Dash. This document covers everything you need to get started.
-
 ---
 
 ## Table of Contents
