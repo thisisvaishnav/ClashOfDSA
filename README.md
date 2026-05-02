@@ -238,14 +238,7 @@ docs/contributing-guide
    chore: bump Prisma to 6.3.0
    ```
 
-4. Push your branch and open a Pull Request against `main`.
 
-5. In your PR description, include:
-   - A summary of what changed and why
-   - Steps to test the change locally
-   - Any database migrations or environment variable changes required
-
----
 
 ## Reporting Issues
 
