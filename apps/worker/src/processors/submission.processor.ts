@@ -4,12 +4,12 @@ import type { SubmissionJobData, SubmissionJobResult } from '@repo/queue';
 import { CODE_EXECUTION_TIMEOUT_MS } from '../config/env.config';
 
 // ─── Types ───────────────────────────────────────────────────────────
-type TestCase = {
+export type TestCase = {
   input: Record<string, unknown>;
   expected: unknown;
 };
 
-type ExecutionResult = {
+export type ExecutionResult = {
   status: 'passed' | 'failed' | 'error';
   testsPassed: number;
   totalTests: number;
@@ -19,7 +19,7 @@ type ExecutionResult = {
 // ─── Helpers ─────────────────────────────────────────────────────────
 
 /** Deep-equal via JSON serialisation (order-sensitive for arrays, order-insensitive for primitives) */
-const deepEqual = (actual: unknown, expected: unknown): boolean => {
+export const deepEqual = (actual: unknown, expected: unknown): boolean => {
   return JSON.stringify(actual) === JSON.stringify(expected);
 };
 
@@ -27,7 +27,7 @@ const deepEqual = (actual: unknown, expected: unknown): boolean => {
  * Extract the first user-defined function name from submitted code.
  * Supports both `function foo(…)` declarations and `const/let/var foo = (…) =>` expressions.
  */
-const extractFunctionName = (code: string): string | null => {
+export const extractFunctionName = (code: string): string | null => {
   const funcDecl = code.match(/function\s+(\w+)\s*\(/);
   if (funcDecl) return funcDecl[1]!;
 
@@ -42,13 +42,13 @@ const extractFunctionName = (code: string): string | null => {
  * are added to the vm context object (const/let are script-scoped and
  * invisible to the host).
  */
-const normalizeForVm = (code: string): string => {
+export const normalizeForVm = (code: string): string => {
   return code.replace(/^(const|let)\s+/gm, 'var ');
 };
 
 // ─── JavaScript Executor ─────────────────────────────────────────────
 
-const executeJavaScript = (code: string, testcases: TestCase[]): ExecutionResult => {
+export const executeJavaScript = (code: string, testcases: TestCase[]): ExecutionResult => {
   const totalTests = testcases.length;
 
   if (totalTests === 0) {
